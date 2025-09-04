@@ -616,11 +616,24 @@ if st.session_state.filtered_df is not None:
             for study in metrics_df['study_normalized'].dropna().unique():
                 study_data = metrics_df[metrics_df['study_normalized'] == study]
                 
+                # Calculate normal & correct and abnormal & correct
+                normal_mask = study_data['is_normal'].astype(str).str.lower() == 'true' if 'is_normal' in df.columns else pd.Series([False] * len(study_data))
+                correct_mask = study_data['is_correct'].astype(str).str.lower() == 'true' if 'is_correct' in df.columns else pd.Series([False] * len(study_data))
+                
+                normal_correct = (normal_mask & correct_mask).sum()
+                abnormal_correct = ((~normal_mask) & correct_mask).sum()
+                
+                # Calculate AI normal count
+                ai_normal = (study_data['is_ai_report_normal'].astype(str).str.lower() == 'true').sum() if 'is_ai_report_normal' in df.columns else 0
+                
                 stats = {
                     'Study Type': study,
                     'Total': len(study_data),
                     'Normal': (study_data['is_normal'].astype(str).str.lower() == 'true').sum() if 'is_normal' in df.columns else 0,
-                    'Correct': (study_data['is_correct'].astype(str).str.lower() == 'true').sum() if 'is_correct' in df.columns else 0
+                    'Normal (AI)': ai_normal,
+                    'Correct': (study_data['is_correct'].astype(str).str.lower() == 'true').sum() if 'is_correct' in df.columns else 0,
+                    'Normal & Correct': normal_correct,
+                    'Abnormal & Correct': abnormal_correct
                 }
                 
                 stats['% Normal'] = (stats['Normal'] / stats['Total'] * 100) if stats['Total'] > 0 else 0
@@ -658,11 +671,24 @@ if st.session_state.filtered_df is not None:
                     
                 rad_data = metrics_df[metrics_df['radiologist_name'] == rad]
                 
+                # Calculate normal & correct and abnormal & correct
+                normal_mask = rad_data['is_normal'].astype(str).str.lower() == 'true' if 'is_normal' in df.columns else pd.Series([False] * len(rad_data))
+                correct_mask = rad_data['is_correct'].astype(str).str.lower() == 'true' if 'is_correct' in df.columns else pd.Series([False] * len(rad_data))
+                
+                normal_correct = (normal_mask & correct_mask).sum()
+                abnormal_correct = ((~normal_mask) & correct_mask).sum()
+                
+                # Calculate AI normal count
+                ai_normal = (rad_data['is_ai_report_normal'].astype(str).str.lower() == 'true').sum() if 'is_ai_report_normal' in df.columns else 0
+                
                 stats = {
                     'Radiologist': rad,
                     'Total Reports': len(rad_data),
                     'Normal': (rad_data['is_normal'].astype(str).str.lower() == 'true').sum() if 'is_normal' in df.columns else 0,
-                    'Correct': (rad_data['is_correct'].astype(str).str.lower() == 'true').sum() if 'is_correct' in df.columns else 0
+                    'Normal (AI)': ai_normal,
+                    'Correct': (rad_data['is_correct'].astype(str).str.lower() == 'true').sum() if 'is_correct' in df.columns else 0,
+                    'Normal & Correct': normal_correct,
+                    'Abnormal & Correct': abnormal_correct
                 }
                 
                 stats['% Normal'] = (stats['Normal'] / stats['Total Reports'] * 100) if stats['Total Reports'] > 0 else 0
