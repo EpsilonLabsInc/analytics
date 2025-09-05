@@ -757,10 +757,8 @@ if st.session_state.filtered_df is not None:
             else:
                 # Function to format duration
                 def format_duration(seconds):
-                    if seconds < 60:
+                    if seconds < 3600:
                         return f"{seconds:.1f}s"
-                    elif seconds < 3600:
-                        return f"{seconds/60:.1f}m"
                     else:
                         return f"{seconds/3600:.1f}h"
                 
@@ -975,7 +973,7 @@ if st.session_state.filtered_df is not None:
                         rad_df = pd.DataFrame(rad_data).sort_values('Reports', ascending=False)
                         
                         # Display table
-                        st.dataframe(rad_df, use_container_width=True)
+                        st.dataframe(rad_df, width='stretch')
                     
                     # Percentiles
                     st.subheader("Reading time percentiles")
@@ -988,7 +986,7 @@ if st.session_state.filtered_df is not None:
                         'Time': [format_duration(v) for v in perc_values]
                     })
                     
-                    st.dataframe(perc_df, use_container_width=True)
+                    st.dataframe(perc_df, width='stretch')
                 
                 else:
                     st.warning("No valid reading time data found. Check that reports have proper timestamps and are from the same radiologist.")
@@ -1035,7 +1033,7 @@ if st.session_state.filtered_df is not None:
         if selected_columns:
             # Dynamic height: 35px per row + 50px for header, max 600px
             table_height = min(600, (len(display_df) * 35) + 50)
-            st.dataframe(display_df[selected_columns], use_container_width=True, height=table_height)
+            st.dataframe(display_df[selected_columns], width='stretch', height=table_height)
             
             # Export functionality
             csv = display_df[selected_columns].to_csv(index=False)
