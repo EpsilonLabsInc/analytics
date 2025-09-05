@@ -757,10 +757,8 @@ if st.session_state.filtered_df is not None:
             else:
                 # Function to format duration
                 def format_duration(seconds):
-                    if seconds < 60:
+                    if seconds < 3600:
                         return f"{seconds:.1f}s"
-                    elif seconds < 3600:
-                        return f"{seconds/60:.1f}m"
                     else:
                         return f"{seconds/3600:.1f}h"
                 
