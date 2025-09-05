@@ -816,6 +816,25 @@ if st.session_state.filtered_df is not None:
                             'sessions': rad_df['session_id'].nunique()
                         }
                         
+                        # Analyze by normal/abnormal if available
+                        if 'is_normal' in rad_df.columns:
+                            normal_times = rad_df[(rad_df['time_diff'] > 0) & 
+                                                (rad_df['time_diff'] <= max_reading_seconds) & 
+                                                (~rad_df['new_session']) & 
+                                                (rad_df['is_normal'].astype(str).str.lower() == 'true')]['time_diff'].values
+                            abnormal_times = rad_df[(rad_df['time_diff'] > 0) & 
+                                                  (rad_df['time_diff'] <= max_reading_seconds) & 
+                                                  (~rad_df['new_session']) & 
+                                                  (rad_df['is_normal'].astype(str).str.lower() == 'false')]['time_diff'].values
+                            
+                            if len(normal_times) > 0:
+                                radiologist_stats[radiologist]['normal_mean'] = np.mean(normal_times)
+                                radiologist_stats[radiologist]['normal_median'] = np.median(normal_times)
+                            
+                            if len(abnormal_times) > 0:
+                                radiologist_stats[radiologist]['abnormal_mean'] = np.mean(abnormal_times)
+                                radiologist_stats[radiologist]['abnormal_median'] = np.median(abnormal_times)
+                        
                         # Analyze by correctness if available
                         if 'is_correct' in rad_df.columns:
                             correct_times = rad_df[(rad_df['time_diff'] > 0) & 
@@ -848,42 +867,6 @@ if st.session_state.filtered_df is not None:
                     with col4:
                         st.metric("Total Radiologists", len(radiologist_stats))
                     
-                    # Distribution histogram
-                    st.subheader("Reading Time Distribution")
-                    
-                    # Convert to minutes for display
-                    times_minutes = [t/60 for t in all_reading_times]
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Histogram(
-                        x=times_minutes,
-                        nbinsx=50,
-                        name='Reading Times',
-                        marker_color='#fb923c'
-                    ))
-                    
-                    # Add mean and median lines
-                    mean_minutes = np.mean(times_minutes)
-                    median_minutes = np.median(times_minutes)
-                    
-                    fig.add_vline(x=mean_minutes, line_dash="dash", line_color="red", 
-                                annotation_text=f"Mean:\n{mean_minutes:.1f}m")
-                    fig.add_vline(x=median_minutes, line_dash="dash", line_color="green",
-                                annotation_text=f"Median:\n{median_minutes:.1f}m")
-                    
-                    fig.update_layout(
-                        title="Distribution of Reading Times",
-                        xaxis_title="Reading Time (minutes)",
-                        yaxis_title="Frequency",
-                        showlegend=False,
-                        height=400,
-                        font=dict(family="Inter, sans-serif"),
-                        plot_bgcolor='white',
-                        paper_bgcolor='white'
-                    )
-                    
-                    st.plotly_chart(fig, width='stretch')
-                    
                     # Time distribution breakdown
                     st.subheader("Time Distribution Breakdown")
                     
@@ -914,9 +897,45 @@ if st.session_state.filtered_df is not None:
                     
                     st.plotly_chart(fig_dist, width='stretch')
                     
+                    # Distribution histogram
+                    st.subheader("Reading Time Distribution")
+                    
+                    # Convert to minutes for display
+                    times_minutes = [t/60 for t in all_reading_times]
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Histogram(
+                        x=times_minutes,
+                        nbinsx=50,
+                        name='Reading Times',
+                        marker_color='#fb923c'
+                    ))
+                    
+                    # Add mean and median lines
+                    mean_minutes = np.mean(times_minutes)
+                    median_minutes = np.median(times_minutes)
+                    
+                    fig.add_vline(x=mean_minutes, line_dash="dash", line_color="red", 
+                                annotation_text=f"Mean:\n{mean_minutes:.1f}m")
+                    fig.add_vline(x=median_minutes, line_dash="dash", line_color="green",
+                                annotation_text=f"Median:\n{median_minutes:.1f}m")
+                    
+                    fig.update_layout(
+                        title="Reading times histogram",
+                        xaxis_title="Reading time (min)",
+                        yaxis_title="Frequency",
+                        showlegend=False,
+                        height=400,
+                        font=dict(family="Inter, sans-serif"),
+                        plot_bgcolor='white',
+                        paper_bgcolor='white'
+                    )
+                    
+                    st.plotly_chart(fig, width='stretch')
+                    
                     # Radiologist breakdown
                     if len(radiologist_stats) > 1 or (len(radiologist_stats) == 1 and 'All Reports' not in radiologist_stats):
-                        st.subheader("Performance by Radiologist")
+                        st.subheader("Performance by radiologist")
                         
                         # Create dataframe for display
                         rad_data = []
@@ -930,6 +949,16 @@ if st.session_state.filtered_df is not None:
                                 'Median Time': format_duration(stats['median_seconds']),
                                 'Std Dev': format_duration(stats['std_seconds'])
                             }
+                            
+                            # Add normal/abnormal times if available
+                            if 'normal_mean' in stats:
+                                row['Avg Normal'] = format_duration(stats['normal_mean'])
+                            if 'normal_median' in stats:
+                                row['Median Normal'] = format_duration(stats['normal_median'])
+                            if 'abnormal_mean' in stats:
+                                row['Avg Abnormal'] = format_duration(stats['abnormal_mean'])
+                            if 'abnormal_median' in stats:
+                                row['Median Abnormal'] = format_duration(stats['abnormal_median'])
                             
                             # Add correct/incorrect if available
                             if 'correct_mean' in stats:
@@ -949,7 +978,7 @@ if st.session_state.filtered_df is not None:
                         st.dataframe(rad_df, use_container_width=True)
                     
                     # Percentiles
-                    st.subheader("Reading Time Percentiles")
+                    st.subheader("Reading time percentiles")
                     
                     percentiles = [10, 25, 50, 75, 90, 95, 99]
                     perc_values = np.percentile(all_reading_times, percentiles)
